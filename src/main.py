@@ -28,3 +28,23 @@ def check_drift():
         "interpretation": interpretation
 
     }
+from pydantic import BaseModel
+from typing import List
+
+class LiveDataInput(BaseModel):
+    live_values: List[float]
+
+
+@app.post("/check-drift-custom")
+def check_drift_custom(data: LiveDataInput):
+    reference_data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    live_data = np.array(data.live_values)
+
+    detector = DriftDetector(reference_data, num_bins=5)
+    psi_score = detector.calculate_psi(live_data)
+    interpretation = detector.interpret_psi(psi_score)
+
+    return {
+        "psi_score": psi_score,
+        "interpretation": interpretation
+    }
