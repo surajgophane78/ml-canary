@@ -1,10 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from pydantic import BaseModel
+from typing import List
+from prometheus_client import Gauge, generate_latest
 import numpy as np
 import sys
 sys.path.append("src")
 from drift_detector import DriftDetector
 
 app = FastAPI()
+
+psi_gauge = Gauge("drift_psi_score", "Current PSI score for drift detection")
 
 
 @app.get("/")
@@ -14,22 +19,15 @@ def home():
 
 @app.get("/check-drift")
 def check_drift():
-
-    reference_data = np.array([1.0, 2.0, 3.0, 4.0, 50])
-
+    reference_data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     live_data = np.array([8.0, 9.0, 10.0, 11.0, 12.0, 8.5, 9.5, 10.5])
 
     detector = DriftDetector(reference_data, num_bins=5)
     psi_score = detector.calculate_psi(live_data)
     interpretation = detector.interpret_psi(psi_score)
 
-    return {
-        "psi_score": psi_score,
-        "interpretation": interpretation
+    return {"psi_score": psi_score, "interpretation": interpretation}
 
-    }
-from pydantic import BaseModel
-from typing import List
 
 class LiveDataInput(BaseModel):
     live_values: List[float]
@@ -44,7 +42,11 @@ def check_drift_custom(data: LiveDataInput):
     psi_score = detector.calculate_psi(live_data)
     interpretation = detector.interpret_psi(psi_score)
 
-    return {
-        "psi_score": psi_score,
-        "interpretation": interpretation
-    }
+    psi_gauge.set(psi_score)
+
+    return {"psi_score": psi_score, "interpretation": interpretation}
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type="text/plain")
