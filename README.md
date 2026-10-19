@@ -21,7 +21,7 @@ Service Layer: FastAPI
 
 Deployment: Docker, Kubernetes, AWS
 
-CI/CD & Monitoring: GitHub Actions, Prometheus, Grafana
+CI/CD & Monitoring: GitHub Actions, Prometheus, Grafana any etc.
 
 👨‍💻 Author
 Suraj Gophane — BCA Student, learning MLOps from scratch.
