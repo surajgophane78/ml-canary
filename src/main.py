@@ -6,10 +6,14 @@ import numpy as np
 import sys
 sys.path.append("src")
 from drift_detector import DriftDetector
+from alert import send_telegram_alert
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
 psi_gauge = Gauge("drift_psi_score", "Current PSI score for drift detection")
+last_alert_time = None
+COOLDOWN_MINUTES = 5
 
 
 @app.get("/")
@@ -35,6 +39,8 @@ class LiveDataInput(BaseModel):
 
 @app.post("/check-drift-custom")
 def check_drift_custom(data: LiveDataInput):
+    global last_alert_time
+
     reference_data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     live_data = np.array(data.live_values)
 
@@ -44,9 +50,11 @@ def check_drift_custom(data: LiveDataInput):
 
     psi_gauge.set(psi_score)
 
+    if psi_score > 0.2:
+        now = datetime.now()
+        if last_alert_time is None or (now - last_alert_time) > timedelta(minutes=COOLDOWN_MINUTES):
+            alert_message = f"🚨 ML Canary Alert!\nPSI Score: {psi_score:.4f}\nStatus: {interpretation}"
+            send_telegram_alert(alert_message)
+            last_alert_time = now
+
     return {"psi_score": psi_score, "interpretation": interpretation}
-
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type="text/plain")
