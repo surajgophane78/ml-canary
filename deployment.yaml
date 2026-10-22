@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-canary-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-canary
+  template:
+    metadata:
+      labels:
+        app: ml-canary
+    spec:
+      containers:
+        - name: ml-canary-container
+          image: ml-canary-app
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
