@@ -8,6 +8,8 @@ sys.path.append("src")
 from drift_detector import DriftDetector
 from alert import send_telegram_alert
 from datetime import datetime, timedelta
+from stock_drift import check_stock_drift
+
 
 app = FastAPI()
 
@@ -20,6 +22,17 @@ COOLDOWN_MINUTES = 5
 def home():
     return {"message": "ML Canary is running!"}
 
+@app.get("/check-stock-drift/{symbol}")
+def check_stock_drift_endpoint(symbol: str):
+    try:
+        psi_score, interpretation = check_stock_drift(symbol)
+        return {
+            "stock": symbol,
+            "psi_score": psi_score,
+            "interpretation": interpretation
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/check-drift")
 def check_drift():
